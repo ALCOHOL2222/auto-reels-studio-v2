@@ -5,4 +5,4 @@ opencv-python
 faster-whisper
 imageio-ffmpeg
 numpy
-mediapipe
+mediapipe==0.10.21
