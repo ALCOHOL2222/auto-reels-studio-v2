@@ -11,4 +11,3 @@ models
 *.avi
 *.zip
 .DS_Store
-.vercel

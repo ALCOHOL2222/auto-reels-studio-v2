@@ -273,30 +273,30 @@ def ffmpeg_sub_path(path: Path) -> str:
 
 
 def burn_ass_and_mux(video_no_audio: Path, source_video: Path, ass_path: Path, out_path: Path, export_preset: str):
-    preset = "medium" if export_preset == "hq1080" else "veryfast"
     crf = "18" if export_preset == "hq1080" else "21"
     cmd = [
         ffmpeg(),
         "-y",
+        "-threads", "1",
         "-i", str(video_no_audio),
         "-i", str(source_video),
         "-map", "0:v:0",
         "-map", "1:a?",
-        "-vf", f"ass={ffmpeg_sub_path(ass_path)}",
+        "-filter_threads", "1",
+        "-vf", f"ass={ffmpeg_sub_path(ass_path)},format=yuv420p",
         "-c:v", "libx264",
-        "-preset", preset,
+        "-preset", "veryfast",
         "-crf", crf,
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
         "-c:a", "aac",
-        "-b:a", "192k",
+        "-b:a", "160k",
         "-shortest",
         str(out_path),
     ]
     run(cmd)
-
 
 def mux_audio(video_no_audio: Path, source_video: Path, out_path: Path, export_preset: str):
-    preset = "medium" if export_preset == "hq1080" else "veryfast"
-    crf = "18" if export_preset == "hq1080" else "21"
     cmd = [
         ffmpeg(),
         "-y",
@@ -304,16 +304,14 @@ def mux_audio(video_no_audio: Path, source_video: Path, out_path: Path, export_p
         "-i", str(source_video),
         "-map", "0:v:0",
         "-map", "1:a?",
-        "-c:v", "libx264",
-        "-preset", preset,
-        "-crf", crf,
+        "-c:v", "copy",
         "-c:a", "aac",
-        "-b:a", "192k",
+        "-b:a", "160k",
+        "-movflags", "+faststart",
         "-shortest",
         str(out_path),
     ]
     run(cmd)
-
 
 def split_video(input_path: Path, out_dir: Path, split_mode: str):
     segment_time = 59 if split_mode == "59" else 179
