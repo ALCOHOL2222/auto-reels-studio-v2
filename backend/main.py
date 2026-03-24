@@ -40,9 +40,9 @@ app.add_middleware(
 
 jobs = {}
 
-WHISPER_MODEL = "small"
+WHISPER_MODEL = "tiny"
 DETECT_EVERY = 3
-DETECT_WIDTH = 640
+DETECT_WIDTH = 480
 
 
 def ffmpeg():
@@ -162,7 +162,7 @@ def trim_video(src: Path, dst: Path, trim_start: float, trim_end: float):
     cmd += ["-i", str(src)]
     if trim_end > 0 and trim_end > trim_start:
         cmd += ["-t", f"{(trim_end - trim_start):.3f}"]
-    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-c:a", "aac", str(dst)]
+    cmd += ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "18", "-c:a", "aac", str(dst)]
     run(cmd)
 
 
@@ -200,7 +200,7 @@ def render_vertical_video(video_path: Path, out_path: Path, face_tracking: bool,
             center_x = crop_positions[min(idx, len(crop_positions) - 1)] if crop_positions else w // 2
             x1 = max(0, min(w - crop_w, center_x - crop_w // 2))
             crop = frame[:, x1:x1 + crop_w]
-            resized = cv2.resize(crop, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4)
+            resized = cv2.resize(crop, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
             writer.write(resized)
             idx += 1
     finally:
@@ -224,12 +224,15 @@ def ass_color(hex_rgb: str) -> str:
 
 
 def make_ass(video_path: Path, ass_path: Path, font_name: str, font_size: int, subtitle_position: str, color: str):
-    model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8")
+    model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", cpu_threads=2)
     segments, _ = model.transcribe(
         str(video_path),
         language="ru",
         vad_filter=True,
         word_timestamps=False,
+        beam_size=1,
+        best_of=1,
+        condition_on_previous_text=False,
     )
     segments = list(segments)
 
@@ -285,7 +288,7 @@ def burn_ass_and_mux(video_no_audio: Path, source_video: Path, ass_path: Path, o
         "-filter_threads", "1",
         "-vf", f"ass={ffmpeg_sub_path(ass_path)},format=yuv420p",
         "-c:v", "libx264",
-        "-preset", "veryfast",
+        "-preset", "ultrafast",
         "-crf", crf,
         "-pix_fmt", "yuv420p",
         "-movflags", "+faststart",
@@ -325,7 +328,7 @@ def split_video(input_path: Path, out_dir: Path, split_mode: str):
         "-segment_time", str(segment_time),
         "-reset_timestamps", "1",
         "-c:v", "libx264",
-        "-preset", "veryfast",
+        "-preset", "ultrafast",
         "-crf", "20",
         "-c:a", "aac",
         str(pattern),
