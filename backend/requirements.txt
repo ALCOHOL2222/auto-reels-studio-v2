@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
+opencv-python
+faster-whisper
+imageio-ffmpeg
+numpy
+mediapipe
