@@ -41,7 +41,7 @@ app.add_middleware(
 jobs = {}
 
 WHISPER_MODEL = "tiny"
-DETECT_EVERY = 3
+DETECT_EVERY = 6
 DETECT_WIDTH = 480
 
 
@@ -55,6 +55,9 @@ def run(cmd):
 
 def update_job(job_id, **kwargs):
     jobs[job_id].update(kwargs)
+
+def public_base_url():
+    return os.getenv("PUBLIC_BASE_URL", "https://auto-reels-api-production.up.railway.app").rstrip("/")
 
 
 def probe_video(path: Path):
@@ -299,6 +302,7 @@ def burn_ass_and_mux(video_no_audio: Path, source_video: Path, ass_path: Path, o
     ]
     run(cmd)
 
+
 def mux_audio(video_no_audio: Path, source_video: Path, out_path: Path, export_preset: str):
     cmd = [
         ffmpeg(),
@@ -315,6 +319,7 @@ def mux_audio(video_no_audio: Path, source_video: Path, out_path: Path, export_p
         str(out_path),
     ]
     run(cmd)
+
 
 def split_video(input_path: Path, out_dir: Path, split_mode: str):
     segment_time = 59 if split_mode == "59" else 179
@@ -385,10 +390,10 @@ def process_job(job_id: str, input_path: Path, options: dict):
             split_dir.mkdir(exist_ok=True)
             files = split_video(final_path, split_dir, options["split_mode"])
             zip_files(files, zip_path)
-            download_url = f"{PUBLIC_BASE_URL}/api/download/{job_id}?kind=zip"
+            download_url = f"{public_base_url()}/api/download/{job_id}?kind=zip"
             output_filename = zip_path.name
         else:
-            download_url = f"{PUBLIC_BASE_URL}/api/download/{job_id}?kind=video"
+            download_url = f"{public_base_url()}/api/download/{job_id}?kind=video"
             output_filename = final_path.name
 
         update_job(
